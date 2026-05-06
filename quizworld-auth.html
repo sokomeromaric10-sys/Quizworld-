@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuizWorld — Connexion</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080f;--card:#111426;--border:#1e2240;--border2:#2a2f5a;
+  --gold:#f5c842;--text:#eceef8;--muted:#6b7299;
+  --accent:#4f6ef7;--accent2:#7c3aed;--green:#22d3a0;--red:#f45b5b;
+}
+body{background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;overflow-x:hidden;}
+.bg-orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:0.15;pointer-events:none;}
+.orb-a{width:500px;height:500px;background:#4f6ef7;top:-150px;left:-150px;}
+.orb-b{width:350px;height:350px;background:#7c3aed;bottom:-100px;right:-100px;}
+.grid-bg{position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(79,110,247,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(79,110,247,0.04) 1px,transparent 1px);background-size:50px 50px;}
+
+.box{position:relative;z-index:1;width:100%;max-width:420px;}
+.logo{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center;margin-bottom:32px;display:block;}
+
+/* TABS */
+.tabs{display:flex;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:4px;margin-bottom:28px;}
+.tab{flex:1;padding:11px;text-align:center;border-radius:10px;font-size:0.88rem;font-weight:600;cursor:pointer;color:var(--muted);border:none;background:transparent;font-family:'Outfit',sans-serif;transition:all 0.25s;}
+.tab.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;box-shadow:0 4px 20px rgba(79,110,247,0.3);}
+
+/* FORM */
+.panel{display:none;} .panel.on{display:block;}
+.field{margin-bottom:16px;}
+.label{display:block;font-size:0.75rem;font-weight:600;letter-spacing:0.5px;color:var(--muted);margin-bottom:7px;text-transform:uppercase;}
+.input-wrap{position:relative;}
+input[type=text],input[type=email],input[type=password],select{
+  width:100%;background:var(--card);border:1.5px solid var(--border);border-radius:12px;
+  padding:13px 44px 13px 14px;color:var(--text);font-family:'Outfit',sans-serif;font-size:0.92rem;
+  outline:none;transition:all 0.2s;appearance:none;
+}
+input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,110,247,0.1);}
+input.err{border-color:var(--red);}
+input.ok{border-color:var(--green);}
+.eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:1rem;color:var(--muted);}
+.err-msg{font-size:0.75rem;color:var(--red);margin-top:5px;display:none;}
+.err-msg.on{display:block;}
+
+/* AVATARS */
+.av-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
+.av{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;cursor:pointer;border:2px solid var(--border);background:var(--card);transition:all 0.2s;}
+.av:hover{border-color:var(--accent);transform:scale(1.1);}
+.av.on{border-color:var(--gold);background:rgba(245,200,66,0.1);}
+
+/* 2 cols */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* STRENGTH */
+.str-bar{height:3px;border-radius:99px;background:var(--border);overflow:hidden;margin-top:6px;}
+.str-fill{height:100%;border-radius:99px;width:0%;transition:all 0.3s;}
+.str-lbl{font-size:0.72rem;color:var(--muted);margin-top:4px;}
+
+/* CHECKBOX */
+.check-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:18px;cursor:pointer;}
+.box-check{width:18px;height:18px;border:1.5px solid var(--border2);border-radius:5px;flex-shrink:0;background:var(--card);display:flex;align-items:center;justify-content:center;margin-top:2px;transition:all 0.2s;}
+.box-check.on{background:var(--accent);border-color:var(--accent);}
+.check-lbl{font-size:0.82rem;color:var(--muted);line-height:1.5;}
+.check-lbl a{color:var(--accent);}
+
+/* FORGOT */
+.forgot-row{display:flex;justify-content:flex-end;margin:-8px 0 14px;}
+.forgot-link{font-size:0.78rem;color:var(--accent);cursor:pointer;}
+
+/* DIVIDER */
+.div-wrap{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.div-line{flex:1;height:1px;background:var(--border);}
+.div-txt{font-size:0.74rem;color:var(--muted);}
+
+/* SOCIAL */
+.socials{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.social{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--card);border:1.5px solid var(--border2);border-radius:12px;padding:11px;font-size:0.85rem;font-weight:500;cursor:pointer;color:var(--text);font-family:'Outfit',sans-serif;transition:all 0.2s;}
+.social:hover{border-color:var(--accent);background:rgba(79,110,247,0.06);}
+
+/* SUBMIT */
+.btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;border:none;border-radius:12px;font-family:'Outfit',sans-serif;font-size:0.95rem;font-weight:600;cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden;margin-bottom:14px;box-shadow:0 8px 30px rgba(79,110,247,0.3);}
+.btn:hover{transform:translateY(-2px);opacity:0.9;}
+.btn:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+.btn .lbl{transition:opacity 0.2s;}
+.btn .spin{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:20px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;}
+.btn.loading .lbl{opacity:0;}
+.btn.loading .spin{display:block;}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+
+.switch{text-align:center;font-size:0.84rem;color:var(--muted);}
+.switch a{color:var(--accent);font-weight:600;cursor:pointer;}
+
+/* SUCCESS */
+.success{text-align:center;animation:up 0.5s both;}
+@keyframes up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.s-emoji{font-size:3.5rem;margin-bottom:14px;display:block;animation:bounce 0.6s ease;}
+@keyframes bounce{0%,100%{transform:translateY(0)}40%{transform:translateY(-12px)}60%{transform:translateY(-5px)}}
+.s-title{font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:800;margin-bottom:8px;}
+.s-sub{color:var(--muted);font-size:0.88rem;margin-bottom:24px;line-height:1.6;}
+.profile-card{background:var(--card);border:1.5px solid var(--border2);border-radius:16px;padding:20px;margin-bottom:18px;text-align:left;}
+.p-top{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+.p-av{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:1.8rem;border:2px solid var(--gold);}
+.p-name{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;}
+.p-country{font-size:0.78rem;color:var(--muted);margin-top:2px;}
+.p-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.pst{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center;}
+.pst-n{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;color:var(--accent);}
+.pst-l{font-size:0.65rem;color:var(--muted);text-transform:uppercase;margin-top:1px;}
+.go-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),#e09010);color:#07080f;border:none;border-radius:12px;font-family:'Outfit',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:10px;box-shadow:0 8px 24px rgba(245,200,66,0.2);transition:all 0.2s;}
+.go-btn:hover{transform:translateY(-2px);}
+
+/* FORGOT SCREEN */
+.forgot-screen{display:none;}
+
+/* TOAST */
+.toast{position:fixed;top:20px;right:20px;z-index:999;background:var(--card);border:1.5px solid var(--green);border-radius:12px;padding:13px 18px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 30px rgba(34,211,160,0.15);transform:translateY(-100px);opacity:0;transition:all 0.4s cubic-bezier(0.22,1,0.36,1);max-width:300px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.err{border-color:var(--red);box-shadow:0 8px 30px rgba(244,91,91,0.15);}
+.toast-ico{font-size:1.2rem;}
+.toast-txt{font-size:0.84rem;font-weight:500;}
+</style>
+</head>
+<body>
+<div class="bg-orb orb-a"></div>
+<div class="bg-orb orb-b"></div>
+<div class="grid-bg"></div>
+
+<div class="box">
+  <span class="logo">⚡ QuizWorld</span>
+
+  <!-- AUTH SCREENS -->
+  <div id="auth-screens">
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab on" id="tab-login" onclick="goTab('login')">Se connecter</button>
+      <button class="tab" id="tab-signup" onclick="goTab('signup')">Créer un compte</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="panel on" id="panel-login">
+      <div class="socials">
+        <button class="social" onclick="toast('Bientôt disponible !','ℹ️')">🌐 Google</button>
+        <button class="social" onclick="toast('Bientôt disponible !','ℹ️')">📘 Facebook</button>
+      </div>
+      <div class="div-wrap"><div class="div-line"></div><div class="div-txt">ou par email</div><div class="div-line"></div></div>
+
+      <div class="field">
+        <label class="label">Email</label>
+        <div class="input-wrap">
+          <input type="email" id="l-email" placeholder="vous@exemple.com">
+          <span class="eye">✉️</span>
+        </div>
+        <div class="err-msg" id="e-l-email">Email invalide</div>
+      </div>
+
+      <div class="field">
+        <label class="label">Mot de passe</label>
+        <div class="input-wrap">
+          <input type="password" id="l-pass" placeholder="••••••••">
+          <span class="eye" onclick="toggleEye('l-pass',this)">👁</span>
+        </div>
+        <div class="err-msg" id="e-l-pass">Mot de passe requis</div>
+      </div>
+
+      <div class="forgot-row"><span class="forgot-link" onclick="goForgot()">Mot de passe oublié ?</span></div>
+
+      <button class="btn" id="btn-login" onclick="doLogin()">
+        <span class="lbl">🔐 Se connecter</span>
+        <div class="spin"></div>
+      </button>
+      <div class="switch">Pas de compte ? <a onclick="goTab('signup')">Créer un compte →</a></div>
+    </div>
+
+    <!-- SIGNUP -->
+    <div class="panel" id="panel-signup">
+      <div class="socials">
+        <button class="social" onclick="toast('Bientôt disponible !','ℹ️')">🌐 Google</button>
+        <button class="social" onclick="toast('Bientôt disponible !','ℹ️')">📘 Facebook</button>
+      </div>
+      <div class="div-wrap"><div class="div-line"></div><div class="div-txt">ou par email</div><div class="div-line"></div></div>
+
+      <!-- Avatars -->
+      <div class="label">Choisissez votre avatar</div>
+      <div class="av-grid" id="av-grid"></div>
+
+      <div class="row2">
+        <div class="field">
+          <label class="label">Prénom</label>
+          <input type="text" id="s-fname" placeholder="Kofi">
+          <div class="err-msg" id="e-s-fname">Requis</div>
+        </div>
+        <div class="field">
+          <label class="label">Nom</label>
+          <input type="text" id="s-lname" placeholder="Mensah">
+          <div class="err-msg" id="e-s-lname">Requis</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Pseudo</label>
+        <div class="input-wrap">
+          <input type="text" id="s-pseudo" placeholder="QuizMaster2025" oninput="checkPseudo(this)">
+          <span class="eye" id="pseudo-icon">🎮</span>
+        </div>
+        <div class="err-msg" id="e-s-pseudo">Pseudo déjà pris</div>
+      </div>
+
+      <div class="field">
+        <label class="label">Pays</label>
+        <input type="text" id="s-country" placeholder="🇸🇳 Sénégal, 🇳🇬 Nigeria...">
+      </div>
+
+      <div class="field">
+        <label class="label">Email</label>
+        <div class="input-wrap">
+          <input type="email" id="s-email" placeholder="vous@exemple.com">
+          <span class="eye">✉️</span>
+        </div>
+        <div class="err-msg" id="e-s-email">Email invalide</div>
+      </div>
+
+      <div class="field">
+        <label class="label">Mot de passe</label>
+        <div class="input-wrap">
+          <input type="password" id="s-pass" placeholder="Minimum 8 caractères" oninput="checkStrength(this)">
+          <span class="eye" onclick="toggleEye('s-pass',this)">👁</span>
+        </div>
+        <div class="str-bar"><div class="str-fill" id="str-fill"></div></div>
+        <div class="str-lbl" id="str-lbl">Entrez un mot de passe</div>
+        <div class="err-msg" id="e-s-pass">Minimum 8 caractères</div>
+      </div>
+
+      <div class="check-row" onclick="toggleCheck()">
+        <div class="box-check" id="tos-box"></div>
+        <div class="check-lbl">J'accepte les <a href="#">Conditions d'utilisation</a> de QuizWorld.</div>
+      </div>
+
+      <button class="btn" id="btn-signup" onclick="doSignup()">
+        <span class="lbl">🚀 Créer mon compte</span>
+        <div class="spin"></div>
+      </button>
+      <div class="switch">Déjà un compte ? <a onclick="goTab('login')">Se connecter →</a></div>
+    </div>
+
+  </div><!-- /auth-screens -->
+
+  <!-- FORGOT -->
+  <div class="forgot-screen" id="forgot-screen">
+    <div style="margin-bottom:20px"><span style="color:var(--muted);font-size:0.85rem;cursor:pointer" onclick="goBack()">← Retour</span></div>
+    <div style="font-size:2.5rem;margin-bottom:12px">🔑</div>
+    <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;margin-bottom:8px">Mot de passe oublié ?</div>
+    <div style="color:var(--muted);font-size:0.88rem;margin-bottom:22px">Entrez votre email, on vous envoie un lien.</div>
+    <div class="field">
+      <label class="label">Email</label>
+      <input type="email" id="f-email" placeholder="vous@exemple.com">
+    </div>
+    <button class="btn" onclick="doForgot()"><span class="lbl">📧 Envoyer le lien</span><div class="spin"></div></button>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="success" id="success-screen" style="display:none">
+    <span class="s-emoji" id="s-emoji">🎉</span>
+    <div class="s-title" id="s-title">Bienvenue !</div>
+    <div class="s-sub" id="s-sub">Compte créé avec succès !</div>
+    <div class="profile-card">
+      <div class="p-top">
+        <div class="p-av" id="p-av">👑</div>
+        <div>
+          <div class="p-name" id="p-name">Joueur</div>
+          <div class="p-country" id="p-country">🌍</div>
+        </div>
+      </div>
+      <div class="p-stats">
+        <div class="pst"><div class="pst-n">0</div><div class="pst-l">Parties</div></div>
+        <div class="pst"><div class="pst-n">0</div><div class="pst-l">Points</div></div>
+        <div class="pst"><div class="pst-n">—</div><div class="pst-l">% Correct</div></div>
+      </div>
+    </div>
+    <button class="go-btn" onclick="window.location.href='quiz-culture-generale.html'">🚀 Commencer à jouer !</button>
+    <button class="btn" style="background:rgba(255,255,255,0.06);box-shadow:none" onclick="window.location.href='quizworld-home.html'">🏠 Page d'accueil</button>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-ico" id="t-ico">✅</div>
+  <div class="toast-txt" id="t-txt">Message</div>
+</div>
+
+<script>
+// ── SUPABASE ──
+const { createClient } = supabase;
+const sb = createClient(
+  'https://tldbrpujqbstuqybczbg.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRsZGJycHVqcWJzdHVxeWJjemJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5NzAyNzgsImV4cCI6MjA5MzU0NjI3OH0.J9cnP-l7_GUwG1xPfDD21KrlZIeFvgqie0iEU9mbvsg'
+);
+
+// ── AVATAR ──
+let selAvatar = '👑';
+const avatars = ['👑','🦁','🌺','⭐','🔥','🦅','🌟','💎','⚡','🏆','🌍','🎯'];
+const grid = document.getElementById('av-grid');
+avatars.forEach((a, i) => {
+  const d = document.createElement('div');
+  d.className = 'av' + (i===0?' on':'');
+  d.textContent = a;
+  d.onclick = function() {
+    document.querySelectorAll('.av').forEach(x=>x.classList.remove('on'));
+    d.classList.add('on');
+    selAvatar = a;
+  };
+  grid.appendChild(d);
+});
+
+// ── TABS ──
+function goTab(t) {
+  document.getElementById('tab-login').classList.toggle('on', t==='login');
+  document.getElementById('tab-signup').classList.toggle('on', t==='signup');
+  document.getElementById('panel-login').classList.toggle('on', t==='login');
+  document.getElementById('panel-signup').classList.toggle('on', t==='signup');
+}
+
+// ── TOGGLE PASSWORD ──
+function toggleEye(id, el) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type==='password' ? 'text' : 'password';
+  el.textContent = inp.type==='password' ? '👁' : '🙈';
+}
+
+// ── STRENGTH ──
+function checkStrength(inp) {
+  const v = inp.value;
+  let s = 0;
+  if(v.length>=8) s++; if(/[A-Z]/.test(v)) s++; if(/[0-9]/.test(v)) s++; if(/[^A-Za-z0-9]/.test(v)) s++;
+  const colors = ['','#f45b5b','#f97316','#f5c842','#22d3a0'];
+  const labels = ['','Trop faible','Faible','Moyen 🙂','Fort 💪'];
+  document.getElementById('str-fill').style.cssText = `width:${s/4*100}%;background:${colors[s]||'transparent'}`;
+  document.getElementById('str-lbl').textContent = v.length ? labels[s] : 'Entrez un mot de passe';
+}
+
+// ── PSEUDO ──
+let pseudoTO;
+function checkPseudo(inp) {
+  clearTimeout(pseudoTO);
+  document.getElementById('pseudo-icon').textContent = '⏳';
+  pseudoTO = setTimeout(() => {
+    const v = inp.value.trim();
+    if(v.length < 3) { document.getElementById('pseudo-icon').textContent = '🎮'; return; }
+    document.getElementById('pseudo-icon').textContent = '✅';
+    inp.classList.add('ok');
+  }, 600);
+}
+
+// ── CHECKBOX ──
+let tosOk = false;
+function toggleCheck() {
+  tosOk = !tosOk;
+  document.getElementById('tos-box').classList.toggle('on', tosOk);
+}
+
+// ── ERROR HELPERS ──
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  if(el) { el.classList.add('err'); }
+  const e = document.getElementById('e-'+id);
+  if(e) { if(msg) e.textContent = msg; e.classList.add('on'); }
+}
+function clearAllErrors() {
+  document.querySelectorAll('.err-msg').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('input').forEach(i=>i.classList.remove('err'));
+}
+
+// ── LOADING ──
+function setLoading(id, on) {
+  const btn = document.getElementById(id);
+  btn.disabled = on;
+  btn.classList.toggle('loading', on);
+}
+
+// ── TOAST ──
+let toastTO;
+function toast(msg, ico='✅', err=false) {
+  const t = document.getElementById('toast');
+  document.getElementById('t-ico').textContent = ico;
+  document.getElementById('t-txt').textContent = msg;
+  t.className = 'toast show' + (err?' err':'');
+  clearTimeout(toastTO);
+  toastTO = setTimeout(()=>t.classList.remove('show'), 3500);
+}
+
+// ── SCREENS ──
+function goForgot() {
+  document.getElementById('auth-screens').style.display = 'none';
+  document.getElementById('forgot-screen').style.display = 'block';
+  document.getElementById('success-screen').style.display = 'none';
+}
+function goBack() {
+  document.getElementById('auth-screens').style.display = 'block';
+  document.getElementById('forgot-screen').style.display = 'none';
+}
+function showSuccess(mode, name, country) {
+  document.getElementById('auth-screens').style.display = 'none';
+  document.getElementById('forgot-screen').style.display = 'none';
+  document.getElementById('success-screen').style.display = 'block';
+  document.getElementById('s-emoji').textContent = mode==='login' ? '👋' : '🎉';
+  document.getElementById('s-title').textContent = mode==='login' ? 'Bon retour !' : 'Bienvenue !';
+  document.getElementById('s-sub').textContent   = mode==='login'
+    ? 'Vous êtes connecté avec succès !'
+    : 'Compte créé ! Vérifiez votre email pour confirmer.';
+  document.getElementById('p-av').textContent      = selAvatar;
+  document.getElementById('p-name').textContent    = name;
+  document.getElementById('p-country').textContent = country || '🌍 International';
+}
+
+// ── LOGIN ──
+async function doLogin() {
+  clearAllErrors();
+  const email = document.getElementById('l-email').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  let ok = true;
+  if(!email || !/\S+@\S+\.\S+/.test(email)) { showErr('l-email','Email invalide'); ok=false; }
+  if(!pass) { showErr('l-pass','Mot de passe requis'); ok=false; }
+  if(!ok) return;
+
+  setLoading('btn-login', true);
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  setLoading('btn-login', false);
+
+  if(error) {
+    toast(error.message.includes('Invalid') ? 'Email ou mot de passe incorrect' : error.message, '❌', true);
+    return;
+  }
+
+  const { data: profil } = await sb.from('profiles').select('*').eq('user_id', data.user.id).single();
+  showSuccess('login', profil?.username || email.split('@')[0], profil?.country || '🌍');
+  toast('Connexion réussie ! 🎉');
+}
+
+// ── SIGNUP ──
+async function doSignup() {
+  clearAllErrors();
+  const fname  = document.getElementById('s-fname').value.trim();
+  const lname  = document.getElementById('s-lname').value.trim();
+  const pseudo = document.getElementById('s-pseudo').value.trim();
+  const country= document.getElementById('s-country').value.trim();
+  const email  = document.getElementById('s-email').value.trim();
+  const pass   = document.getElementById('s-pass').value;
+  let ok = true;
+
+  if(!fname)  { showErr('s-fname','Prénom requis'); ok=false; }
+  if(!lname)  { showErr('s-lname','Nom requis'); ok=false; }
+  if(!pseudo) { showErr('s-pseudo','Pseudo requis'); ok=false; }
+  if(!email || !/\S+@\S+\.\S+/.test(email)) { showErr('s-email','Email invalide'); ok=false; }
+  if(pass.length < 8) { showErr('s-pass','Minimum 8 caractères'); ok=false; }
+  if(!tosOk) { toast('Acceptez les conditions d\'utilisation', '⚠️', true); ok=false; }
+  if(!ok) return;
+
+  setLoading('btn-signup', true);
+  const { data, error } = await sb.auth.signUp({ email, password: pass });
+  if(error) {
+    setLoading('btn-signup', false);
+    toast(error.message.includes('already') ? 'Email déjà utilisé' : error.message, '❌', true);
+    return;
+  }
+
+  const { error: pErr } = await sb.from('profiles').insert({
+    user_id: data.user.id, username: pseudo,
+    avatar: selAvatar, country: country || '🌍 International'
+  });
+  setLoading('btn-signup', false);
+
+  if(pErr && pErr.code === '23505') {
+    toast('Ce pseudo est déjà pris', '⚠️', true); return;
+  }
+
+  showSuccess('signup', fname + ' ' + lname, country);
+  toast('Compte créé avec succès ! 🎉');
+}
+
+// ── FORGOT PASSWORD ──
+async function doForgot() {
+  const email = document.getElementById('f-email').value.trim();
+  if(!email) { toast('Entrez votre email','⚠️', true); return; }
+  await sb.auth.resetPasswordForEmail(email);
+  toast('Lien envoyé à ' + email + ' 📧');
+  setTimeout(() => goBack(), 2000);
+}
+</script>
+</body>
+</html>

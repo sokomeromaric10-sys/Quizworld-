@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz — L'Afrique & le Monde</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d14;
+    --card: #13131f;
+    --border: #2a2a3d;
+    --gold: #f0c040;
+    --gold2: #e8a020;
+    --text: #e8e4f0;
+    --muted: #7a7a9a;
+    --correct: #3ecf8e;
+    --wrong: #e85050;
+    --accent: #7c5cfc;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px; left: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(124,92,252,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -200px; right: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(240,192,64,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 680px;
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 6vw, 3.2rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.85rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  /* PROGRESS */
+  .progress-bar {
+    background: var(--border);
+    border-radius: 99px;
+    height: 4px;
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    border-radius: 99px;
+    transition: width 0.5s ease;
+  }
+
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px 40px;
+    position: relative;
+    overflow: hidden;
+    animation: slideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+  }
+
+  .category-tag {
+    display: inline-block;
+    background: rgba(124,92,252,0.15);
+    border: 1px solid rgba(124,92,252,0.3);
+    color: #a98ef8;
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 99px;
+    margin-bottom: 20px;
+  }
+
+  .question {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.1rem, 3vw, 1.45rem);
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 32px;
+    color: var(--text);
+  }
+
+  /* OPTIONS */
+  .options {
+    display: grid;
+    gap: 12px;
+  }
+
+  .option {
+    background: rgba(255,255,255,0.03);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .option:hover:not(.disabled) {
+    border-color: var(--accent);
+    background: rgba(124,92,252,0.08);
+    transform: translateX(4px);
+  }
+
+  .option-letter {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--muted);
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .option-text {
+    font-size: 0.95rem;
+    font-weight: 400;
+    line-height: 1.35;
+  }
+
+  .option.correct {
+    border-color: var(--correct);
+    background: rgba(62,207,142,0.08);
+    animation: pulse-correct 0.4s ease;
+  }
+
+  .option.correct .option-letter {
+    background: var(--correct);
+    color: #0d0d14;
+  }
+
+  .option.wrong {
+    border-color: var(--wrong);
+    background: rgba(232,80,80,0.08);
+  }
+
+  .option.wrong .option-letter {
+    background: var(--wrong);
+    color: white;
+  }
+
+  .option.disabled { cursor: default; pointer-events: none; }
+
+  @keyframes pulse-correct {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+  }
+
+  /* EXPLANATION */
+  .explanation {
+    margin-top: 20px;
+    padding: 14px 18px;
+    background: rgba(240,192,64,0.06);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 8px 8px 0;
+    font-size: 0.88rem;
+    color: #c8c0a0;
+    line-height: 1.5;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* NEXT BTN */
+  .next-btn {
+    display: block;
+    width: 100%;
+    margin-top: 24px;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), #5a3cdc);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .next-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .next-btn:active { transform: translateY(0); }
+
+  /* SCORE */
+  .score-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 52px 40px;
+    text-align: center;
+    animation: slideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .score-emoji {
+    font-size: 4rem;
+    display: block;
+    margin-bottom: 16px;
+    animation: bounce 0.6s ease;
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-18px); }
+    60% { transform: translateY(-8px); }
+  }
+
+  .score-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 900;
+    margin-bottom: 10px;
+  }
+
+  .score-subtitle {
+    color: var(--muted);
+    margin-bottom: 36px;
+    font-size: 0.9rem;
+  }
+
+  .score-circle {
+    width: 130px; height: 130px;
+    border-radius: 50%;
+    border: 3px solid var(--gold);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    margin: 0 auto 36px;
+    background: rgba(240,192,64,0.06);
+    box-shadow: 0 0 40px rgba(240,192,64,0.1);
+  }
+
+  .score-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.6rem;
+    font-weight: 900;
+    color: var(--gold);
+    line-height: 1;
+  }
+
+  .score-denom {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .restart-btn {
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    color: #0d0d14;
+    border: none;
+    border-radius: 12px;
+    padding: 16px 40px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .restart-btn:hover { opacity: 0.9; transform: translateY(-2px); }
+
+  /* TIMER */
+  .timer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+
+  .timer-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--correct);
+    animation: blink 1s infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .timer.warning { color: var(--wrong); }
+  .timer.warning .timer-dot { background: var(--wrong); }
+
+  @media (max-width: 520px) {
+    .card, .score-card { padding: 28px 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo">L'Afrique & le Monde</div>
+    <div class="subtitle">Histoire · Géographie · Science · Culture</div>
+  </div>
+  <div id="app"></div>
+</div>
+
+<script>
+const questions = [
+  // HISTOIRE AFRICAINE
+  {
+    category: "Histoire Africaine",
+    q: "Quel empire africain était réputé pour sa richesse en or et contrôlait les routes commerciales du Sahara au XIVe siècle ?",
+    options: ["Empire du Ghana", "Empire du Mali", "Empire Songhaï", "Royaume du Kongo"],
+    answer: 1,
+    expl: "L'Empire du Mali, dirigé notamment par Mansa Musa, était l'un des plus riches du monde au XIVe siècle. Mansa Musa possédait une fortune colossale grâce aux mines d'or et de sel."
+  },
+  {
+    category: "Histoire Africaine",
+    q: "Mansa Musa, célèbre roi du Mali, réalisa un pèlerinage à La Mecque en quelle année ?",
+    options: ["1224", "1324", "1424", "1524"],
+    answer: 1,
+    expl: "En 1324, Mansa Musa traversa l'Afrique et le Moyen-Orient avec une caravane de 60 000 hommes et tant d'or qu'il provoqua une inflation durable en Égypte."
+  },
+  {
+    category: "Histoire Africaine",
+    q: "Quelle cité africaine antique était surnommée 'la perle des déserts' et abritait une université islamique célèbre ?",
+    options: ["Tombouctou", "Carthage", "Aksoum", "Zimbabwe"],
+    answer: 0,
+    expl: "Tombouctou (Mali actuel) était un grand centre intellectuel. L'université de Sankore attirait des milliers d'étudiants du monde entier aux XIVe–XVIe siècles."
+  },
+  {
+    category: "Histoire Africaine",
+    q: "L'Empire Songhaï, qui succéda à l'Empire du Mali, fut détruit en 1591 par l'invasion de quel pays ?",
+    options: ["Portugal", "France", "Maroc", "Espagne"],
+    answer: 2,
+    expl: "L'armée du Sultan du Maroc, Ahmad al-Mansour, équipée d'armes à feu, vainquit les Songhaï lors de la bataille de Tondibi (1591), mettant fin à l'empire."
+  },
+  {
+    category: "Histoire Africaine",
+    q: "La reine Nzinga du Mbundu (Angola actuel) est célèbre pour avoir résisté à quel colonisateur au XVIIe siècle ?",
+    options: ["Anglais", "Français", "Belges", "Portugais"],
+    answer: 3,
+    expl: "La reine Nzinga (1583–1663) a mené une résistance acharnée contre les Portugais pendant des décennies, devenant un symbole de lutte pour l'indépendance africaine."
+  },
+  // GÉOGRAPHIE AFRICAINE
+  {
+    category: "Géographie Africaine",
+    q: "Quel est le plus long fleuve d'Afrique ?",
+    options: ["Congo", "Niger", "Nil", "Zambèze"],
+    answer: 2,
+    expl: "Le Nil s'étend sur environ 6 650 km, traversant 11 pays. Il est aussi le plus long fleuve du monde, bien que certaines sources disputent cette place à l'Amazone."
+  },
+  {
+    category: "Géographie Africaine",
+    q: "Quel pays africain compte le plus grand nombre de pyramides au monde, devant l'Égypte ?",
+    options: ["Éthiopie", "Soudan", "Libye", "Mali"],
+    answer: 1,
+    expl: "Le Soudan possède plus de 200 pyramides méroïtiques, contre environ 130 en Égypte. Ces pyramides du royaume de Koush sont souvent plus petites mais plus nombreuses."
+  },
+  {
+    category: "Géographie Africaine",
+    q: "Quelle montagne est le plus haut sommet d'Afrique ?",
+    options: ["Mont Kenya", "Mont Kilimandjaro", "Ras Dashan", "Mont Cameroun"],
+    answer: 1,
+    expl: "Le Kilimandjaro en Tanzanie culmine à 5 895 m. C'est aussi le plus haut volcan du continent et la plus haute montagne autoportante du monde."
+  },
+  // SCIENCE & NATURE
+  {
+    category: "Science & Nature",
+    q: "Quel scientifique d'origine africaine a contribué aux mathématiques de l'Égypte ancienne avec le 'Papyrus Rhind' vers 1550 av. J.-C. ?",
+    options: ["Imhotep", "Ahmes", "Thoth", "Ptah"],
+    answer: 1,
+    expl: "Ahmes (ou Ahmès) est le scribe à l'origine du Papyrus Rhind, l'un des plus anciens documents mathématiques connus, contenant des problèmes de fractions, géométrie et algèbre."
+  },
+  {
+    category: "Science & Nature",
+    q: "L'Afrique abrite le plus grand désert chaud du monde. Quelle est sa superficie approximative ?",
+    options: ["5 millions km²", "7 millions km²", "9 millions km²", "12 millions km²"],
+    answer: 2,
+    expl: "Le Sahara couvre environ 9,2 millions de km², soit la taille des États-Unis. Il n'a pas toujours été désertique : il y a 6 000 ans, il était vert et fertile."
+  },
+  // CULTURE & ART
+  {
+    category: "Art & Culture",
+    q: "Les bronzes du Bénin, pillés en 1897, étaient les œuvres artistiques du royaume de Bénin, situé dans quel pays actuel ?",
+    options: ["République du Bénin", "Ghana", "Nigeria", "Côte d'Ivoire"],
+    answer: 2,
+    expl: "Le royaume de Bénin (Bénin City) est situé dans l'actuel Nigeria. Ses bronzes, datant du XIIIe siècle, sont parmi les plus sophistiqués de l'art africain. Beaucoup sont toujours dans des musées européens."
+  },
+  {
+    category: "Art & Culture",
+    q: "L'écriture Ge'ez, encore utilisée aujourd'hui pour les textes religieux, est propre à quel pays africain ?",
+    options: ["Soudan", "Kenya", "Éthiopie", "Tanzanie"],
+    answer: 2,
+    expl: "Le Ge'ez est une écriture antique originaire d'Éthiopie (et d'Érythrée). Elle est toujours utilisée dans les Églises orthodoxes éthiopiennes et reste l'une des plus vieilles écritures du monde encore en usage."
+  },
+  {
+    category: "Histoire Africaine",
+    q: "La bataille d'Adoua (1896) est historique car elle représente la première grande défaite d'une puissance coloniale européenne face à un pays africain. Qui s'affrontait ?",
+    options: ["Maroc vs France", "Éthiopie vs Italie", "Zoulou vs Angleterre", "Égypte vs Angleterre"],
+    answer: 1,
+    expl: "À Adoua, l'armée éthiopienne du Négus Ménélik II infligea une défaite écrasante à l'armée italienne. L'Éthiopie préserva ainsi son indépendance, devenant un symbole de résistance pour toute l'Afrique."
+  },
+  {
+    category: "Géographie Africaine",
+    q: "Combien de pays le continent africain compte-t-il ?",
+    options: ["48", "52", "54", "57"],
+    answer: 2,
+    expl: "L'Afrique compte 54 pays reconnus internationalement, dont les plus récents sont l'Érythrée (1993) et le Soudan du Sud (2011), le pays le plus jeune du monde."
+  },
+  {
+    category: "Science & Nature",
+    q: "Quelle civilisation africaine antique est à l'origine de l'un des premiers calendriers solaires de l'histoire, vers 4 000 av. J.-C. ?",
+    options: ["Égypte ancienne", "Empire du Mali", "Carthage", "Nubie"],
+    answer: 0,
+    expl: "Les Égyptiens anciens développèrent un calendrier solaire de 365 jours vers 4 000 av. J.-C., l'un des premiers de l'histoire humaine. Ce calendrier influença directement notre calendrier moderne."
+  }
+];
+
+// Shuffle
+const shuffled = [...questions].sort(() => Math.random() - 0.5);
+let current = 0, score = 0, answered = false;
+let timerInterval = null, timeLeft = 20;
+const letters = ['A', 'B', 'C', 'D'];
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timeLeft = 20;
+  updateTimer();
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimer();
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      if (!answered) autoFail();
+    }
+  }, 1000);
+}
+
+function updateTimer() {
+  const el = document.getElementById('timer');
+  if (!el) return;
+  el.textContent = `${timeLeft}s`;
+  el.parentElement.className = 'timer' + (timeLeft <= 5 ? ' warning' : '');
+  const dot = el.parentElement.querySelector('.timer-dot');
+  if (dot) dot.style.background = timeLeft <= 5 ? 'var(--wrong)' : 'var(--correct)';
+}
+
+function autoFail() {
+  answered = true;
+  const q = shuffled[current];
+  document.querySelectorAll('.option').forEach((el, i) => {
+    el.classList.add('disabled');
+    if (i === q.answer) el.classList.add('correct');
+  });
+  showExplanation(q.expl);
+  showNext();
+}
+
+function showExplanation(text) {
+  const card = document.querySelector('.card');
+  const exp = document.createElement('div');
+  exp.className = 'explanation';
+  exp.textContent = '💡 ' + text;
+  card.appendChild(exp);
+}
+
+function showNext() {
+  const btn = document.createElement('button');
+  btn.className = 'next-btn';
+  btn.textContent = current < shuffled.length - 1 ? 'Question suivante →' : 'Voir mes résultats';
+  btn.onclick = () => {
+    current++;
+    answered = false;
+    render();
+  };
+  document.querySelector('.card').appendChild(btn);
+}
+
+function render() {
+  const app = document.getElementById('app');
+  if (current >= shuffled.length) {
+    clearInterval(timerInterval);
+    renderScore(app);
+    return;
+  }
+  const q = shuffled[current];
+  const pct = (current / shuffled.length) * 100;
+  app.innerHTML = `
+    <div class="progress-info">
+      <span>Question ${current + 1} / ${shuffled.length}</span>
+      <div class="timer"><div class="timer-dot"></div><span id="timer">20s</span></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    <div class="card">
+      <div class="category-tag">${q.category}</div>
+      <div class="question">${q.q}</div>
+      <div class="options">
+        ${q.options.map((opt, i) => `
+          <div class="option" data-i="${i}" onclick="choose(${i})">
+            <div class="option-letter">${letters[i]}</div>
+            <div class="option-text">${opt}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  startTimer();
+}
+
+function choose(i) {
+  if (answered) return;
+  answered = true;
+  clearInterval(timerInterval);
+  const q = shuffled[current];
+  const opts = document.querySelectorAll('.option');
+  opts.forEach(el => el.classList.add('disabled'));
+  opts[i].classList.add(i === q.answer ? 'correct' : 'wrong');
+  if (i === q.answer) {
+    score++;
+  } else {
+    opts[q.answer].classList.add('correct');
+  }
+  showExplanation(q.expl);
+  showNext();
+}
+
+function renderScore(app) {
+  const pct = Math.round((score / shuffled.length) * 100);
+  let emoji = '🥲', msg = 'Pas de chance...';
+  if (pct >= 80) { emoji = '🏆'; msg = 'Excellent ! Bravo !'; }
+  else if (pct >= 60) { emoji = '😎'; msg = 'Très bien joué !'; }
+  else if (pct >= 40) { emoji = '🙂'; msg = 'Pas mal, continuez !'; }
+  app.innerHTML = `
+    <div class="score-card">
+      <span class="score-emoji">${emoji}</span>
+      <div class="score-title">${msg}</div>
+      <div class="score-subtitle">Quiz terminé · L'Afrique & le Monde</div>
+      <div class="score-circle">
+        <div class="score-num">${score}</div>
+        <div class="score-denom">sur ${shuffled.length}</div>
+      </div>
+      <div style="color:var(--muted);font-size:0.9rem;margin-bottom:28px;">${pct}% de bonnes réponses</div>
+      <button class="restart-btn" onclick="restart()">↺ Rejouer</button>
+    </div>
+  `;
+}
+
+function restart() {
+  shuffled.sort(() => Math.random() - 0.5);
+  current = 0; score = 0; answered = false;
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
